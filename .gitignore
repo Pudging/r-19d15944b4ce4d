@@ -1,2 +1,5 @@
-output.jsonl
+trace/
+trace-max/
+*-sample*.jsonl
+verified-sample-*.jsonl
 __pycache__/

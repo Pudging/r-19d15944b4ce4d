@@ -1,8 +1,13 @@
 *
 !Dockerfile
+!Dockerfile.collector
 !main.py
+!collect_dialects.py
 !scheduler.py
 !select_paths.py
+!select_scopes.py
+!select_dialects.py
 !fixture_index.json
+!dialects.json.gz
+!scopes.json.gz
 !sqlglot-source.zip
-!LICENSE.sqlglot

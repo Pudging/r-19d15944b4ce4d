@@ -1,26 +1,9 @@
-# Blast Radius comment-aware selector
+# Team potato · Blast Radius
 
-This candidate selects known SQL fixture readers and skips Python comment additions after checking the diff against the pinned source, tokenizing the inserted lines, and verifying that the Python AST is unchanged. It runs all tests for runtime code edits, unrecognized patches, and fixture readers it cannot resolve. The scheduler balances the selected tests across the cheapest available worker count.
+Build this Docker image and run it with the official scorer. The selector uses the Python standard library. It reads the supplied test catalog and patches and writes one JSON line per patch. The implementation was developed with Codex.
 
-Three runs using the starter's Linux amd64 container limits produced identical output. The official sample scorer reported **648.179 simulated seconds and zero misses** across all 30 commits in each run. The score excludes container CPU time. Hidden commits can expose fixture reads missed by the static index, or tests that observe changed source line numbers or source text despite an unchanged AST.
+The dependency maps and source snapshot derive from the organizer's pinned SQLGlot commit `eb11aec4be8cb2122afe713a4816662c3f0fb2fa`. The selector normalizes line endings when it reads the bundled pinned source for diff matching. Toby Mao's original MIT license is included as `LICENSE.sqlglot`.
 
-## Run the public sample
+The selector combines fixture references, ordinary-comment equivalence, explicit and observed dialect dependencies, and per-test coverage of localized function edits. The coverage collector carries pytest node IDs into spawned process-pool work. Tests without reliable coverage and tests that use untracked external subprocesses remain selected for scoped changes. Changes that cannot be validated or classified run the full test suite. Worker scheduling uses the scorer's integer millisecond costs.
 
-From this directory, build and run with Docker using the official starter's mount and resource settings.
-
-```sh
-docker build --platform linux/amd64 -t buildathon-rwx-comment-entry:local .
-sample=$(cd ../../starter/sample && pwd)
-docker run --rm --platform linux/amd64 --network none --cpus 2 \
-  --memory 4096m --memory-swap 4096m --pids-limit 256 --read-only \
-  --tmpfs /tmp:rw,size=64m,mode=1777 --cap-drop ALL \
-  --security-opt no-new-privileges --user 65534:65534 --env HOME=/tmp \
-  --volume "$sample/commits:/data/commits:ro" \
-  --volume "$sample/tests.json:/data/tests.json:ro" \
-  buildathon-rwx-comment-entry:local > output.jsonl
-python ../../starter/score.py "$sample" "$sample/answers.json" output.jsonl
-```
-
-## Source and license
-
-`sqlglot-source.zip` contains only the tracked Python source files under `sqlglot/` from [SQLGlot at commit eb11aec](https://github.com/tobymao/sqlglot/tree/eb11aec4be8cb2122afe713a4816662c3f0fb2fa). All 184 files were checked byte for byte against that commit. Its unmodified MIT notice, copyright 2026 Toby Mao, is in `LICENSE.sqlglot`. The fixture index comes from AST analysis of upstream test code at the same commit. The Docker image contains no test labels, sample patches, or repository metadata. The selector code is released under the MIT License in `LICENSE`.
+The official public scorer reported **321.592 simulated seconds and zero misses on all 30 sample patches**, compared with 1,210.470 seconds for the untouched starter. This sample total excludes container CPU. Hidden cases may expose unobserved dependencies, source introspection, or import-time behavior. The scorer image contains source-derived maps and the pinned source snapshot. Sample patches, expected answers, and run outputs are excluded.
