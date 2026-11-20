@@ -1,0 +1,8 @@
+*
+!Dockerfile
+!main.py
+!scheduler.py
+!select_paths.py
+!fixture_index.json
+!sqlglot-source.zip
+!LICENSE.sqlglot
