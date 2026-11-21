@@ -5,6 +5,7 @@ from pathlib import Path
 from zipfile import Path as ZipPath, ZipFile
 
 from fixture_bundle import load_fixture_index
+from select_declarations import load_declarations, projected
 from prepare_maps import load_maps
 from scheduler import schedule
 from select_observed import affected_observations
@@ -20,7 +21,7 @@ DATA = Path("/data")
 ASSETS = Path(__file__).parent
 
 
-def select(patch, tests, fixture_index, source, dialects, coverage, lines, observations=None,
+def select_previous(patch, tests, fixture_index, source, dialects, coverage, lines, observations=None,
            resources=None, blobs=None, known_catalog=True, semantics=None):
     edits = resource_patch(patch, blobs) if resources is not None else file_edits(patch)
     if not edits:
@@ -94,6 +95,39 @@ def select(patch, tests, fixture_index, source, dialects, coverage, lines, obser
         or test["file"] in source_importers or test["id"] not in seen
     ]
     return refine(path, diff, source, selected, lines, semantics) if single_source else selected
+
+
+def select(patch, tests, fixture_index, source, dialects, coverage, lines, observations=None,
+           resources=None, blobs=None, known_catalog=True, semantics=None):
+    def previous(text, fixture_archive=resources):
+        return select_previous(text, tests, fixture_index, source, dialects, coverage, lines,
+                               observations, fixture_archive, blobs, known_catalog, semantics)
+
+    if not known_catalog or semantics is None:
+        return previous(patch)
+    edits = resource_patch(patch, blobs) if resources is not None else file_edits(patch)
+    if not edits or not any(p.startswith("sqlglot/") and p.endswith(".py") for p in edits):
+        return previous(patch)
+    data = load_declarations()
+    # A test must reach at least one changed site for execution to diverge.
+    # For mixed patches retain full fixture readers, including format-only edits.
+    selected = set()
+    for path, diff in edits.items():
+        if len(edits) == 1:
+            prior = previous(patch)
+        elif path in fixture_index:
+            prior = fixture_tests(set(fixture_index[path]), tests)
+            if prior is None:
+                return tests
+        else:
+            text = f"diff --git a/{path} b/{path}\n" + "\n".join(diff) + "\n"
+            prior = previous(text, None)
+        if prior:
+            narrowed = projected(path, diff, source, data)
+            selected.update(t["id"] for t in prior if narrowed is None or t["id"] in narrowed)
+    if len(selected) == len(tests):
+        return tests
+    return [t for t in tests if t["id"] in selected]
 
 
 def main():

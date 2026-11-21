@@ -24,3 +24,5 @@
 
 !select_semantics.py
 !semantics.json.gz
+!select_declarations.py
+!declarations.json.gz
