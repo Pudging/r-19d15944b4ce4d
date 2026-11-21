@@ -1,4 +1,4 @@
-# Blast Radius comment-aware selector
+# Comment-aware test selector
 
 This candidate selects known SQL fixture readers and skips Python comment additions after checking the diff against the pinned source, tokenizing the inserted lines, and verifying that the Python AST is unchanged. It runs all tests for runtime code edits, unrecognized patches, and fixture readers it cannot resolve. The scheduler balances the selected tests across the cheapest available worker count.
 
@@ -9,7 +9,7 @@ Three runs using the starter's Linux amd64 container limits produced identical o
 From this directory, build and run with Docker using the official starter's mount and resource settings.
 
 ```sh
-docker build --platform linux/amd64 -t buildathon-rwx-comment-entry:local .
+docker build --platform linux/amd64 -t selector-dev:local .
 sample=$(cd ../../starter/sample && pwd)
 docker run --rm --platform linux/amd64 --network none --cpus 2 \
   --memory 4096m --memory-swap 4096m --pids-limit 256 --read-only \
@@ -17,7 +17,7 @@ docker run --rm --platform linux/amd64 --network none --cpus 2 \
   --security-opt no-new-privileges --user 65534:65534 --env HOME=/tmp \
   --volume "$sample/commits:/data/commits:ro" \
   --volume "$sample/tests.json:/data/tests.json:ro" \
-  buildathon-rwx-comment-entry:local > output.jsonl
+  selector-dev:local > output.jsonl
 python ../../starter/score.py "$sample" "$sample/answers.json" output.jsonl
 ```
 
